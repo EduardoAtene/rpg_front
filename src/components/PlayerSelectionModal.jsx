@@ -6,9 +6,28 @@ const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
     const [searchAvailable, setSearchAvailable] = useState("");
     const [searchSelected, setSearchSelected] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingPlayers, setIsFetchingPlayers] = useState(true); // Estado para controle de carregamento inicial
+    const [fetchError, setFetchError] = useState(null); // Controle de erros na API
 
     useEffect(() => {
-        fetchPlayers().then(setAvailablePlayers);
+        setIsFetchingPlayers(true);
+        fetchPlayers()
+            .then((response) => {
+                if (response?.players && Array.isArray(response.players)) {
+                    setAvailablePlayers(response.players);
+                } else if (Array.isArray(response)) {
+                    setAvailablePlayers(response);
+                } else {
+                    console.error("O retorno não é uma lista de jogadores válida:", response);
+                    setAvailablePlayers([]);
+                }
+                setIsFetchingPlayers(false);
+            })
+            .catch((error) => {
+                console.error("Erro ao buscar jogadores:", error);
+                setFetchError("Erro ao carregar a lista de jogadores. Tente novamente.");
+                setIsFetchingPlayers(false);
+            });
     }, [fetchPlayers]);
 
     const handleAddPlayer = (playerId) => {
@@ -49,64 +68,119 @@ const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
                         <button type="button" className="btn-close" onClick={onClose}></button>
                     </div>
                     <div className="modal-body d-flex">
-                        <div className="w-50 me-3">
-                            <h6>Disponíveis</h6>
-                            <input
-                                type="text"
-                                className="form-control mb-2"
-                                placeholder="Pesquisar jogadores..."
-                                value={searchAvailable}
-                                onChange={(e) => setSearchAvailable(e.target.value)}
-                            />
-                            <ul
-                                className="list-group"
-                                style={{ maxHeight: "300px", overflowY: "auto" }}
-                            >
-                                {filteredAvailable.map((player) => (
-                                    <li
-                                        key={player.id}
-                                        className="list-group-item d-flex justify-content-between align-items-center"
-                                    >
-                                        {player.name} - {player.class}
-                                        <button
-                                            className="btn btn-success btn-sm"
-                                            onClick={() => handleAddPlayer(player.id)}
-                                        >
-                                            ➡️
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="w-50">
-                            <h6>Selecionados</h6>
-                            <input
-                                type="text"
-                                className="form-control mb-2"
-                                placeholder="Pesquisar jogadores..."
-                                value={searchSelected}
-                                onChange={(e) => setSearchSelected(e.target.value)}
-                            />
-                            <ul
-                                className="list-group"
-                                style={{ maxHeight: "300px", overflowY: "auto" }}
-                            >
-                                {filteredSelected.map((player) => (
-                                    <li
-                                        key={player.id}
-                                        className="list-group-item d-flex justify-content-between align-items-center"
-                                    >
-                                        {player.name} - {player.class}
-                                        <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() => handleRemovePlayer(player.id)}
-                                        >
-                                            ⬅️
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        {isFetchingPlayers ? (
+                            <div className="w-100 text-center">
+                                <div className="spinner-border" role="status">
+                                    <span className="visually-hidden">Carregando jogadores...</span>
+                                </div>
+                                <p>Carregando jogadores...</p>
+                            </div>
+                        ) : fetchError ? (
+                            <div className="w-100 text-center text-danger">
+                                <p>{fetchError}</p>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => window.location.reload()}
+                                >
+                                    Tentar Novamente
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="w-50 me-3">
+                                    <h6>Jogadores Disponíveis</h6>
+                                    <input
+                                        type="text"
+                                        className="form-control mb-2"
+                                        placeholder="Pesquisar jogadores..."
+                                        value={searchAvailable}
+                                        onChange={(e) => setSearchAvailable(e.target.value)}
+                                    />
+                                    <table className="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Classe</th>
+                                                <th>XP</th>
+                                                <th>Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredAvailable.length > 0 ? (
+                                                filteredAvailable.map((player) => (
+                                                    <tr key={player.id}>
+                                                        <td>{player.name}</td>
+                                                        <td>{player.class?.name || "Sem classe"}</td>
+                                                        <td>{player.xp || 0}</td>
+                                                        <td>
+                                                            <button
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={() => handleAddPlayer(player.id)}
+                                                                disabled={isLoading}
+                                                            >
+                                                               ►
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="4" className="text-center text-muted">
+                                                        Nenhum jogador encontrado.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="w-50">
+                                    <h6>Jogadores Selecionados</h6>
+                                    <input
+                                        type="text"
+                                        className="form-control mb-2"
+                                        placeholder="Pesquisar jogadores..."
+                                        value={searchSelected}
+                                        onChange={(e) => setSearchSelected(e.target.value)}
+                                    />
+                                    <table className="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Ação</th>
+                                                <th>Nome</th>
+                                                <th>Classe</th>
+                                                <th>XP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredSelected.length > 0 ? (
+                                                filteredSelected.map((player) => (
+                                                    <tr key={player.id}>
+                                                        <td>
+                                                            <button
+                                                                className="btn btn-danger btn-sm"
+                                                                onClick={() => handleRemovePlayer(player.id)}
+                                                                disabled={isLoading}
+                                                            >
+                                                                ◄
+                                                            </button>
+                                                        </td>
+                                                        <td>{player.name}</td>
+                                                        <td>{player.class?.name || "Sem classe"}</td>
+                                                        <td>{player.xp || 0}</td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="4" className="text-center text-muted">
+                                                        Nenhum jogador selecionado.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <div className="modal-footer">
                         <button className="btn btn-secondary" onClick={onClose} disabled={isLoading}>
@@ -115,7 +189,7 @@ const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
                         <button
                             className="btn btn-primary"
                             onClick={handleSave}
-                            disabled={isLoading}
+                            disabled={isLoading || isFetchingPlayers}
                         >
                             {isLoading ? (
                                 <span>
