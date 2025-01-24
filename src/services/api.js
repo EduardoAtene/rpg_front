@@ -4,7 +4,7 @@ let playersMock = Array.from({ length: 10 }, (_, index) => ({
     class: ["Clérigo", "Guerreiro", "Mago", "Arqueiro"][
         Math.floor(Math.random() * 4)
     ],
-    xp: Math.floor(Math.random() * 100),
+    xp: Math.floor(Math.random() * 100) + 1,
 }));
 
 const sessionsMock = Array.from({ length: 10 }, (_, index) => ({
@@ -22,7 +22,17 @@ export const api = {
         playersMock = [...playersMock, { id: playersMock.length + 1, ...player }];
         return Promise.resolve(playersMock[playersMock.length - 1]);
     },
-    getSessions: () => Promise.resolve(sessionsMock),
+    updatePlayer: (id, updatedPlayer) => {
+        playersMock = playersMock.map((player) =>
+            player.id === id ? { ...player, ...updatedPlayer } : player
+        );
+        return Promise.resolve(playersMock.find((player) => player.id === id));
+    },
+    deletePlayer: (id) => {
+        playersMock = playersMock.filter((p) => p.id !== id);
+        return Promise.resolve();
+    },
+    getSessions: () => Promise.resolve([...sessionsMock]),
     getSessionById: (id) => Promise.resolve(sessionsMock.find((s) => s.id === id)),
     getAvailablePlayers: () => Promise.resolve([...playersMock]),
 };
