@@ -26,6 +26,9 @@ const associatePlayersToSession = (sessionId, playerIds) =>
 const unassociatePlayersFromSession = (sessionId, playerIds) =>
     axiosInstance.delete(`/sessions/${sessionId}/players`, { data: { player_ids: playerIds } });
 
+
+
+
 // Objeto consolidando todas as funções
 const api = {
     getPlayers,

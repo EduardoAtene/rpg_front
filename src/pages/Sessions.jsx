@@ -5,6 +5,9 @@ import api from "../services/api";
 const Sessions = () => {
     const [sessions, setSessions] = useState([]);
     const [alert, setAlert] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [currentSessionId, setCurrentSessionId] = useState(null);
+    const [modalType, setModalType] = useState(null); // 'start' or 'delete'
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -31,19 +34,35 @@ const Sessions = () => {
     }, [location.state]);
 
     const handleDeleteSession = (id) => {
-        if (window.confirm("Tem certeza que deseja excluir esta sessão?")) {
-            api.deleteSession(id)
-                .then(() => {
-                    setAlert({ type: "success", message: "Sessão excluída com sucesso!" });
-                    setSessions(sessions.filter((session) => session.id !== id));
-                    setTimeout(() => setAlert(null), 3000);
-                })
-                .catch((error) => {
-                    console.error("Erro ao excluir sessão:", error);
-                    setAlert({ type: "danger", message: "Erro ao excluir a sessão. Tente novamente mais tarde." });
-                    setTimeout(() => setAlert(null), 3000);
-                });
-        }
+        setCurrentSessionId(id);
+        setModalType('delete');
+        setShowModal(true);
+    };
+
+    const confirmDeleteSession = () => {
+        setShowModal(false);
+        api.deleteSession(currentSessionId)
+            .then(() => {
+                setAlert({ type: "success", message: "Sessão excluída com sucesso!" });
+                setSessions(sessions.filter((session) => session.id !== currentSessionId));
+                setTimeout(() => setAlert(null), 3000);
+            })
+            .catch((error) => {
+                console.error("Erro ao excluir sessão:", error);
+                setAlert({ type: "danger", message: "Erro ao excluir a sessão. Tente novamente mais tarde." });
+                setTimeout(() => setAlert(null), 3000);
+            });
+    };
+
+    const handleStartSession = (id) => {
+        setCurrentSessionId(id);
+        setModalType('start');
+        setShowModal(true);
+    };
+
+    const confirmStartSession = () => {
+        setShowModal(false);
+        navigate(`/sessions/start/${currentSessionId}`);
     };
 
     const getActions = (session) => {
@@ -64,7 +83,7 @@ const Sessions = () => {
                 {session.status === "waiting" && (
                     <button
                         className="btn btn-warning btn-sm ms-2"
-                        onClick={() => navigate(`/sessions/start/${session.id}`)}
+                        onClick={() => handleStartSession(session.id)}
                     >
                         Iniciar Sessão
                     </button>
@@ -95,7 +114,12 @@ const Sessions = () => {
                 </div>
             )}
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2>Sessões</h2>
+                <button
+                    className="btn btn-secondary"
+                    onClick={() => navigate("/")}
+                >
+                    Voltar para Home
+                </button>
                 <button
                     className="btn btn-success"
                     onClick={() => navigate("/sessions/create")}
@@ -136,6 +160,47 @@ const Sessions = () => {
                     ))}
                 </tbody>
             </table>
+
+            {/* Modal de Confirmação */}
+            {showModal && (
+                <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    {modalType === 'start' ? 'Confirmar Início de Sessão' : 'Confirmar Exclusão de Sessão'}
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowModal(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>
+                                    {modalType === 'start'
+                                        ? 'Você tem certeza que deseja iniciar esta sessão?'
+                                        : 'Você tem certeza que deseja excluir esta sessão?'}
+                                </p>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowModal(false)}
+                                >
+                                    Não
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={modalType === 'start' ? confirmStartSession : confirmDeleteSession}
+                                >
+                                    Sim
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
