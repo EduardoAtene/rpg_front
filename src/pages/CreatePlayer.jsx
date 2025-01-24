@@ -5,7 +5,7 @@ import api from "../services/api";
 const CreatePlayer = () => {
     const [name, setName] = useState("");
     const [xp, setXp] = useState(1);
-    const [playerClass, setPlayerClass] = useState("");
+    const [playerClassId, setPlayerClassId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { id } = useParams();
     const navigate = useNavigate();
@@ -14,11 +14,11 @@ const CreatePlayer = () => {
         if (id) {
             setIsLoading(true);
             api.getPlayerById(parseInt(id, 10)).then((response) => {
-                const player = response.data.player; // Ajustado para acessar o campo "player" no JSON
+                const player = response.data.player;
                 if (player) {
                     setName(player.name);
                     setXp(player.xp);
-                    setPlayerClass(player.class.name); // Ajuste para acessar o nome da classe corretamente
+                    setPlayerClassId(player.class.id);
                 }
                 setIsLoading(false);
             }).catch((error) => {
@@ -33,7 +33,7 @@ const CreatePlayer = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        const playerData = { name, xp, class: { name: playerClass } }; // Envia a classe no formato correto
+        const playerData = { name, xp, player_class_id: playerClassId };
 
         if (id) {
             api.updatePlayer(parseInt(id, 10), playerData).then(() => {
@@ -107,15 +107,15 @@ const CreatePlayer = () => {
                         <select
                             id="class"
                             className="form-select"
-                            value={playerClass}
-                            onChange={(e) => setPlayerClass(e.target.value)}
+                            value={playerClassId}
+                            onChange={(e) => setPlayerClassId(e.target.value)}
                             required
                         >
                             <option value="" disabled>Selecione uma classe</option>
-                            <option value="Clérigo">Clérigo</option>
-                            <option value="Guerreiro">Guerreiro</option>
-                            <option value="Mago">Mago</option>
-                            <option value="Arqueiro">Arqueiro</option>
+                            <option value="1">Clérigo</option>
+                            <option value="2">Guerreiro</option>
+                            <option value="3">Mago</option>
+                            <option value="4">Arqueiro</option>
                         </select>
                     </div>
                     <div className="mb-3">

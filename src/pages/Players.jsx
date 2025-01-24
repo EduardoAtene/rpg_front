@@ -4,23 +4,23 @@ import api from "../services/api";
 import { debounce } from "lodash";
 
 const Players = () => {
-    const [players, setPlayers] = useState([]); // Lista de jogadores inicializada como array vazio
-    const [isLoading, setIsLoading] = useState(true); // Estado de carregamento
+    const [players, setPlayers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    // Carrega os jogadores ao montar o componente
+    
     useEffect(() => {
         loadPlayers();
     }, []);
 
     const loadPlayers = debounce(async () => {
         try {
-            const response = await api.getPlayers(); // Chamada da API
+            const response = await api.getPlayers();
             if (response.data && Array.isArray(response.data.players)) {
-                setPlayers(response.data.players); // Define a lista de jogadores
+                setPlayers(response.data.players);
             } else {
                 console.error("Resposta inesperada da API:", response.data);
-                setPlayers([]); // Lista vazia em caso de erro
+                setPlayers([]);
             }
         } catch (error) {
             console.error("Erro ao carregar jogadores:", error);
@@ -28,18 +28,18 @@ const Players = () => {
         } finally {
             setIsLoading(false);
         }
-    }, 300); // Debounce de 300ms para evitar chamadas excessivas
+    }, 300);
 
     const handleRemovePlayer = async (id) => {
         if (window.confirm("Deseja realmente remover este jogador?")) {
-            const previousPlayers = [...players]; // Backup dos jogadores
+            const previousPlayers = [...players];
             try {
-                setPlayers(players.filter((p) => p.id !== id)); // Atualiza a lista local
-                await api.deletePlayer(id); // Chama a API para deletar o jogador
+                setPlayers(players.filter((p) => p.id !== id));
+                await api.deletePlayer(id);
                 alert("Jogador removido com sucesso!");
             } catch (error) {
                 console.error("Erro ao remover jogador:", error);
-                setPlayers(previousPlayers); // Restaura a lista local em caso de falha
+                setPlayers(previousPlayers);
                 alert("Erro ao remover o jogador. Tente novamente.");
             }
         }
@@ -87,7 +87,7 @@ const Players = () => {
                         players.map((player) => (
                             <tr key={player.id}>
                                 <td>{player.name}</td>
-                                <td>{player.class.name}</td> {/* Acessa o nome da classe */}
+                                <td>{player.class.name}</td>
                                 <td>{player.xp}</td>
                                 <td>
                                     <button
