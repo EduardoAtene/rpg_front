@@ -1,13 +1,63 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../services/api";
 
 const Sessions = () => {
+    const [sessions, setSessions] = useState([]);
     const navigate = useNavigate();
 
-    const sessions = [
-        { id: 1, name: "Sessão 1", startDate: "2025-01-01", status: "Pendente" },
-        { id: 2, name: "Sessão 2", startDate: "2025-02-01", status: "Concluída" },
-    ];
+    useEffect(() => {
+        api.getSessions().then(setSessions);
+    }, []);
+
+    const getActions = (session) => {
+        if (session.status === "Não iniciada") {
+            return (
+                <>
+                    <button
+                        className="btn btn-primary btn-sm me-2"
+                        onClick={() => navigate(`/sessions/edit/${session.id}`)}
+                    >
+                        Editar
+                    </button>
+                    <button
+                        className="btn btn-warning btn-sm"
+                        onClick={() => navigate(`/sessions/start/${session.id}`)}
+                    >
+                        Iniciar Sessão
+                    </button>
+                </>
+            );
+        }
+        if (session.status === "Em andamento") {
+            return (
+                <>
+                    <button
+                        className="btn btn-primary btn-sm me-2"
+                        onClick={() => navigate(`/sessions/edit/${session.id}`)}
+                    >
+                        Editar
+                    </button>
+                    <button
+                        className="btn btn-warning btn-sm me-2"
+                        onClick={() => navigate(`/sessions/start/${session.id}`)}
+                    >
+                        Retomar Sessão
+                    </button>
+                    <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => alert(`Sessão ${session.name} finalizada!`)}
+                    >
+                        Finalizar Sessão
+                    </button>
+                </>
+            );
+        }
+        if (session.status === "Concluída") {
+            return <span className="text-muted">Sem ações</span>;
+        }
+        return null;
+    };
 
     return (
         <div className="container mt-5">
@@ -36,20 +86,7 @@ const Sessions = () => {
                             <td>{session.name}</td>
                             <td>{session.startDate}</td>
                             <td>{session.status}</td>
-                            <td>
-                                <button
-                                    className="btn btn-primary btn-sm me-2"
-                                    onClick={() => navigate(`/sessions/edit/${session.id}`)}
-                                >
-                                    Editar
-                                </button>
-                                <button
-                                    className="btn btn-warning btn-sm"
-                                    onClick={() => navigate(`/sessions/start/${session.id}`)}
-                                >
-                                    Iniciar Sessão
-                                </button>
-                            </td>
+                            <td>{getActions(session)}</td>
                         </tr>
                     ))}
                 </tbody>

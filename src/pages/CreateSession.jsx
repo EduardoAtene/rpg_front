@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { api } from "../services/api";
 
 const CreateSession = () => {
     const [name, setName] = useState("");
     const [startDate, setStartDate] = useState("");
+    const [status, setStatus] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { id } = useParams();
     const navigate = useNavigate();
@@ -11,12 +13,14 @@ const CreateSession = () => {
     useEffect(() => {
         if (id) {
             setIsLoading(true);
-            // Simula carregamento de dados da sessão
-            setTimeout(() => {
-                setName("Sessão 1");
-                setStartDate("2025-01-01");
+            api.getSessionById(parseInt(id, 10)).then((session) => {
+                if (session) {
+                    setName(session.name);
+                    setStartDate(session.startDate);
+                    setStatus(session.status);
+                }
                 setIsLoading(false);
-            }, 1000);
+            });
         }
     }, [id]);
 
@@ -26,11 +30,10 @@ const CreateSession = () => {
 
         setTimeout(() => {
             if (id) {
-                console.log("Sessão editada:", { id, name, startDate });
+                console.log("Sessão editada:", { id, name, startDate, status });
                 alert("Sessão editada com sucesso!");
-                
             } else {
-                console.log("Nova sessão criada:", { name, startDate });
+                console.log("Nova sessão criada:", { name, startDate, status: "Não iniciada" });
                 alert("Sessão criada com sucesso!");
             }
             setIsLoading(false);
@@ -40,12 +43,7 @@ const CreateSession = () => {
 
     return (
         <div className="container mt-5">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1>{id ? "Editar Jogador" : "Criar Jogador"}</h1>
-                <button className="btn btn-secondary" onClick={() => navigate("/players")}>
-                    Voltar para Listagem
-                </button>
-            </div>
+            <h1 className="mb-4">{id ? "Editar Sessão" : "Criar Sessão"}</h1>
             {isLoading ? (
                 <div className="text-center">
                     <div className="spinner-border" role="status">
@@ -81,9 +79,32 @@ const CreateSession = () => {
                             required
                         />
                     </div>
-                    <button type="submit" className="btn btn-primary">
-                        {id ? "Salvar Sessão" : "Criar Sessão"}
-                    </button>
+                    {id && (
+                        <div className="mb-3">
+                            <label htmlFor="status" className="form-label">
+                                Status
+                            </label>
+                            <input
+                                type="text"
+                                id="status"
+                                className="form-control"
+                                value={status}
+                                readOnly
+                            />
+                        </div>
+                    )}
+                    <div className="d-flex justify-content-between">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate("/sessions")}
+                        >
+                            Voltar
+                        </button>
+                        <button type="submit" className="btn btn-primary">
+                            {id ? "Salvar Sessão" : "Criar Sessão"}
+                        </button>
+                    </div>
                 </form>
             )}
         </div>
