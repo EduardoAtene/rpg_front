@@ -1,38 +1,47 @@
-let playersMock = Array.from({ length: 10 }, (_, index) => ({
-    id: index + 1,
-    name: `Jogador ${index + 1}`,
-    class: ["Clérigo", "Guerreiro", "Mago", "Arqueiro"][
-        Math.floor(Math.random() * 4)
-    ],
-    xp: Math.floor(Math.random() * 100) + 1,
-}));
+import axios from 'axios';
 
-const sessionsMock = Array.from({ length: 10 }, (_, index) => ({
-    id: index + 1,
-    name: `Sessão ${index + 1}`,
-    startDate: `2025-01-${String(index + 1).padStart(2, "0")}`,
-    status: ["Não iniciada", "Em andamento", "Concluída"][
-        Math.floor(Math.random() * 3)
-    ],
-}));
+// Configuração base do Axios
+const axiosInstance = axios.create({
+    baseURL: process.env.REACT_APP_API_URL, // Usa a URL do .env
+});
 
-export const api = {
-    getPlayers: () => Promise.resolve([...playersMock]),
-    addPlayer: (player) => {
-        playersMock = [...playersMock, { id: playersMock.length + 1, ...player }];
-        return Promise.resolve(playersMock[playersMock.length - 1]);
-    },
-    updatePlayer: (id, updatedPlayer) => {
-        playersMock = playersMock.map((player) =>
-            player.id === id ? { ...player, ...updatedPlayer } : player
-        );
-        return Promise.resolve(playersMock.find((player) => player.id === id));
-    },
-    deletePlayer: (id) => {
-        playersMock = playersMock.filter((p) => p.id !== id);
-        return Promise.resolve();
-    },
-    getSessions: () => Promise.resolve([...sessionsMock]),
-    getSessionById: (id) => Promise.resolve(sessionsMock.find((s) => s.id === id)),
-    getAvailablePlayers: () => Promise.resolve([...playersMock]),
+// Funções relacionadas aos jogadores
+const getPlayers = () => axiosInstance.get('/players');
+const getPlayerClasses = () => axiosInstance.get('/players/classes');
+const getPlayerById = (id) => axiosInstance.get(`/players/${id}`);
+const createPlayer = (playerData) => axiosInstance.post('/players', playerData);
+const updatePlayer = (id, playerData) => axiosInstance.put(`/players/${id}`, playerData);
+const deletePlayer = (id) => axiosInstance.delete(`/players/${id}`);
+
+// Funções relacionadas às sessões
+const getSessions = () => axiosInstance.get('/sessions');
+const getSessionById = (id) => axiosInstance.get(`/sessions/${id}`);
+const createSession = (sessionData) => axiosInstance.post('/sessions', sessionData);
+const updateSession = (id, sessionData) => axiosInstance.put(`/sessions/${id}`, sessionData);
+const deleteSession = (id) => axiosInstance.delete(`/sessions/${id}`);
+
+// Funções para associar/desassociar jogadores às sessões
+const associatePlayersToSession = (sessionId, playerIds) =>
+    axiosInstance.post(`/sessions/${sessionId}/players`, { player_ids: playerIds });
+const unassociatePlayersFromSession = (sessionId, playerIds) =>
+    axiosInstance.delete(`/sessions/${sessionId}/players`, { data: { player_ids: playerIds } });
+
+// Objeto consolidando todas as funções
+const api = {
+    getPlayers,
+    getPlayerClasses,
+    getPlayerById,
+    createPlayer,
+    updatePlayer,
+    deletePlayer,
+    getSessions,
+    getSessionById,
+    createSession,
+    updateSession,
+    deleteSession,
+    associatePlayersToSession,
+    unassociatePlayersFromSession,
 };
+
+// Exporta o objeto `api` como padrão
+export default api;

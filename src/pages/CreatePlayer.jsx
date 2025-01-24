@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../services/api";
+import api from "../services/api";
 
 const CreatePlayer = () => {
     const [name, setName] = useState("");
@@ -13,13 +13,17 @@ const CreatePlayer = () => {
     useEffect(() => {
         if (id) {
             setIsLoading(true);
-            api.getPlayers().then((players) => {
-                const player = players.find((p) => p.id === parseInt(id, 10));
+            api.getPlayerById(parseInt(id, 10)).then((response) => {
+                const player = response.data.player; // Ajustado para acessar o campo "player" no JSON
                 if (player) {
                     setName(player.name);
                     setXp(player.xp);
-                    setPlayerClass(player.class);
+                    setPlayerClass(player.class.name); // Ajuste para acessar o nome da classe corretamente
                 }
+                setIsLoading(false);
+            }).catch((error) => {
+                console.error("Erro ao carregar jogador:", error);
+                alert("Erro ao carregar os dados do jogador. Tente novamente mais tarde.");
                 setIsLoading(false);
             });
         }
@@ -29,7 +33,7 @@ const CreatePlayer = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        const playerData = { name, xp, class: playerClass };
+        const playerData = { name, xp, class: { name: playerClass } }; // Envia a classe no formato correto
 
         if (id) {
             api.updatePlayer(parseInt(id, 10), playerData).then(() => {
@@ -42,9 +46,14 @@ const CreatePlayer = () => {
                 setIsLoading(false);
             });
         } else {
-            api.addPlayer(playerData).then(() => {
+            api.createPlayer(playerData).then(() => {
                 alert("Jogador criado com sucesso!");
                 navigate("/players");
+            }).catch((error) => {
+                console.error("Erro ao criar jogador:", error);
+                alert("Erro ao criar o jogador. Tente novamente mais tarde.");
+            }).finally(() => {
+                setIsLoading(false);
             });
         }
     };
@@ -54,6 +63,9 @@ const CreatePlayer = () => {
             api.deletePlayer(parseInt(id, 10)).then(() => {
                 alert("Jogador removido com sucesso!");
                 navigate("/players");
+            }).catch((error) => {
+                console.error("Erro ao remover jogador:", error);
+                alert("Erro ao remover o jogador. Tente novamente mais tarde.");
             });
         }
     };
