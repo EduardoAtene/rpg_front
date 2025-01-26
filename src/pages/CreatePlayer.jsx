@@ -81,11 +81,11 @@ const CreatePlayer = () => {
     };
 
     const handleXpChange = (e) => {
-        const value = e.target.value;
-        setXp(value);
+        const value = parseInt(e.target.value, 10);
 
-        if (!Number.isInteger(Number(value))) {
+        if (isNaN(value)) {
             setXpError("O XP deve ser um número inteiro.");
+            setXp("");
         } else if (value < 1) {
             setXpError("O XP não pode ser menor que 1.");
         } else if (value > 100) {
@@ -93,6 +93,8 @@ const CreatePlayer = () => {
         } else {
             setXpError("");
         }
+    
+        setXp(value || "");
     };
 
     return (
