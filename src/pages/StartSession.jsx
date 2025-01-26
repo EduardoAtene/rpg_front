@@ -13,6 +13,7 @@ const StartSession = () => {
     const [guilds, setGuilds] = useState([]);
     const [simulationResult, setSimulationResult] = useState(null); // Resultado da simulação
     const [alertMessage, setAlertMessage] = useState(null);
+    const [alertMessageSuccess, setAlertMessageSuccess] = useState(null);
     const [validationErrors, setValidationErrors] = useState([]); // Lista de erros de validação
     const [isSimulating, setIsSimulating] = useState(false); // Estado de carregamento
     const navigate = useNavigate();
@@ -82,8 +83,9 @@ const StartSession = () => {
 
         try {
             const response = await api.simulateGuilds(payload);
-            setSimulationResult(response.data); // Salva o resultado da simulação
-            alert(response.data.message); // Exibe a mensagem de sucesso
+            setSimulationResult(response.data);
+            setAlertMessageSuccess("Simulação realizada com sucesso!");
+            setTimeout(() => setAlertMessageSuccess(null), 3000);
         } catch (error) {
             console.error("Erro ao realizar a simulação:", error);
             if (error.response?.data) {
@@ -108,8 +110,49 @@ const StartSession = () => {
         }
     };
 
-    const handleSubmit = () => {
-        handleOpenModal("start");
+    const handleSubmit = async () => {
+        const payload = {
+            session_id: parseInt(id, 10),
+            qnt_guilds: guilds.length,
+            guilds: guilds.map((guild) => ({
+                name: guild.name,
+                player_count: guild.playersCount,
+            })),
+        };
+
+        setIsSimulating(true);
+        setValidationErrors([]); // Limpa os erros anteriores
+
+        try {
+            const response = await api.confirmGuilds(payload);
+            setSimulationResult(response.data);
+            setAlertMessageSuccess("Confirmação da simulação realizada com sucesso!");
+
+            setTimeout(() => {
+                setAlertMessageSuccess(null);
+                navigate(`/sessions/${id}/info`);
+            }, 3000);
+        } catch (error) {
+            console.error("Erro ao realizar a simulação:", error);
+            if (error.response?.data) {
+                const { message, errors } = error.response.data;
+
+                // Processa os erros de validação
+                if (errors) {
+                    const validationErrorMessages = [];
+                    for (const [field, messages] of Object.entries(errors)) {
+                        validationErrorMessages.push(...messages);
+                    }
+                    setValidationErrors(validationErrorMessages);
+                } else {
+                    setValidationErrors([message]);
+                }
+            } else {
+                setValidationErrors(["Erro desconhecido. Tente novamente."]);
+            }
+        } finally {
+            setIsSimulating(false);
+        }
     };
 
     return (
@@ -137,6 +180,12 @@ const StartSession = () => {
             {alertMessage && (
                 <div className="alert alert-danger" role="alert">
                     {alertMessage}
+                </div>
+            )}
+
+            {alertMessageSuccess && (
+                <div className="alert alert-success" role="alert">
+                    {alertMessageSuccess}
                 </div>
             )}
 

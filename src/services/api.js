@@ -19,6 +19,7 @@ const getSessionById = (id) => axiosInstance.get(`/sessions/${id}`);
 const createSession = (sessionData) => axiosInstance.post('/sessions', sessionData);
 const updateSession = (id, sessionData) => axiosInstance.put(`/sessions/${id}`, sessionData);
 const deleteSession = (id) => axiosInstance.delete(`/sessions/${id}`);
+const closeSession = (id) => axiosInstance.put(`/sessions/${id}/close`);
 
 // Funções para associar/desassociar jogadores às sessões
 const associatePlayersToSession = (sessionId, playerIds) =>
@@ -30,7 +31,11 @@ const unassociatePlayersFromSession = (sessionId, playerIds) =>
 const simulateGuilds = (payload) => axiosInstance.post('/simulate-guilds', payload);
 const confirmGuilds = (payload) => axiosInstance.post('/simulate-guilds/confirm', payload);
 
+// Função para obter jogadores associados OU NÃO associados a uma sessão
+const getAssociatedPlayers = (sessionId, associated) =>
+    axiosInstance.get(`/sessions/${sessionId}/players`, { params: { associated } });
 
+const getGuildsBySession = (sessionId) => axiosInstance.get(`/guilds/sessions/${sessionId}`);
 
 // Objeto consolidando todas as funções
 const api = {
@@ -49,6 +54,9 @@ const api = {
     unassociatePlayersFromSession,
     simulateGuilds,
     confirmGuilds,
+    getAssociatedPlayers,
+    getGuildsBySession,
+    closeSession
 };
 
 export default api;

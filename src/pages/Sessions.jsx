@@ -88,17 +88,18 @@ const Sessions = () => {
                         Iniciar Sessão
                     </button>
                 )}
-                {session.status === "finished" && (
+                {(session.status === "in_progress" || session.status === "closed") && (
                     <button
                         className="btn btn-info btn-sm ms-2"
-                        onClick={() => navigate(`/sessions/view/${session.id}`)}
+                        onClick={() => navigate(`/sessions/${session.id}/info`)}
                     >
-                        Visualizar
+                        Detalhes
                     </button>
                 )}
             </>
         );
     };
+    
 
     const handleAlertClose = () => {
         setAlert(null);

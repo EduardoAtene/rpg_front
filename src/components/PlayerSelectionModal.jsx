@@ -1,69 +1,76 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
-const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
+const PlayerSelectionModal = ({ sessionId, onClose, onSave }) => {
     const [availablePlayers, setAvailablePlayers] = useState([]);
-    const [selectedPlayers, setSelectedPlayers] = useState([]);
+    const [associatedPlayers, setAssociatedPlayers] = useState([]);
     const [searchAvailable, setSearchAvailable] = useState("");
-    const [searchSelected, setSearchSelected] = useState("");
+    const [searchAssociated, setSearchAssociated] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
     const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
-        setIsFetchingPlayers(true);
-        fetchPlayers()
-            .then((response) => {
-                if (response?.players && Array.isArray(response.players)) {
-                    setAvailablePlayers(response.players);
-                } else if (Array.isArray(response)) {
-                    setAvailablePlayers(response);
-                } else {
-                    console.error("O retorno não é uma lista de jogadores válida:", response);
-                    setAvailablePlayers([]);
-                }
+        const loadPlayers = async () => {
+            try {
+                setIsFetchingPlayers(true);
+
+                const [availableResponse, associatedResponse] = await Promise.all([
+                    api.getAssociatedPlayers(sessionId, 0), // Jogadores não associados
+                    api.getAssociatedPlayers(sessionId, 1), // Jogadores associados
+                ]);
+
+                // Disponíveis: players_session de `associated=0`
+                setAvailablePlayers(availableResponse.data?.players_session || []);
+                // Associados: players_session de `associated=1`
+                setAssociatedPlayers(associatedResponse.data?.players_session || []);
                 setIsFetchingPlayers(false);
-            })
-            .catch((error) => {
+            } catch (error) {
                 console.error("Erro ao buscar jogadores:", error);
                 setFetchError("Erro ao carregar a lista de jogadores. Tente novamente.");
                 setIsFetchingPlayers(false);
-            });
-    }, [fetchPlayers]);
+            }
+        };
+
+        loadPlayers();
+    }, [sessionId]);
 
     const handleAddPlayer = (playerId) => {
         const player = availablePlayers.find((p) => p.id === playerId);
         setAvailablePlayers(availablePlayers.filter((p) => p.id !== playerId));
-        setSelectedPlayers([...selectedPlayers, player]);
+        setAssociatedPlayers([...associatedPlayers, player]);
     };
 
     const handleRemovePlayer = (playerId) => {
-        const player = selectedPlayers.find((p) => p.id === playerId);
-        setSelectedPlayers(selectedPlayers.filter((p) => p.id !== playerId));
+        const player = associatedPlayers.find((p) => p.id === playerId);
+        setAssociatedPlayers(associatedPlayers.filter((p) => p.id !== playerId));
         setAvailablePlayers([...availablePlayers, player]);
     };
 
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            await api.associatePlayersToSession(sessionId, selectedPlayers.map((p) => p.id));
-            alert("Jogadores adicionados à sessão com sucesso!");
-            onSave(selectedPlayers);
+            await api.associatePlayersToSession(
+                sessionId,
+                associatedPlayers.map((p) => p.id)
+            );
+            alert("Jogadores associados à sessão com sucesso!");
+            onSave(associatedPlayers);
             onClose();
         } catch (error) {
             console.error("Erro ao salvar jogadores na sessão:", error);
-            alert("Erro ao adicionar jogadores à sessão. Tente novamente.");
+            alert("Erro ao associar jogadores à sessão. Tente novamente.");
         } finally {
             setIsLoading(false);
         }
     };
 
     const filteredAvailable = availablePlayers.filter((player) =>
-        player.name.toLowerCase().includes(searchAvailable.toLowerCase())
+        player.name?.toLowerCase().includes(searchAvailable.toLowerCase())
     );
 
-    const filteredSelected = selectedPlayers.filter((player) =>
-        player.name.toLowerCase().includes(searchSelected.toLowerCase())
+    const filteredAssociated = associatedPlayers.filter((player) =>
+        player.name?.toLowerCase().includes(searchAssociated.toLowerCase())
     );
 
     return (
@@ -94,8 +101,9 @@ const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
                             </div>
                         ) : (
                             <>
+                                {/* Jogadores Não Associados */}
                                 <div className="w-50 me-3">
-                                    <h6>Jogadores Disponíveis</h6>
+                                    <h6>Jogadores Não Associados</h6>
                                     <input
                                         type="text"
                                         className="form-control mb-2"
@@ -140,14 +148,15 @@ const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
                                         </tbody>
                                     </table>
                                 </div>
+                                {/* Jogadores Associados */}
                                 <div className="w-50">
-                                    <h6>Jogadores Selecionados</h6>
+                                    <h6>Jogadores Associados</h6>
                                     <input
                                         type="text"
                                         className="form-control mb-2"
                                         placeholder="Pesquisar jogadores..."
-                                        value={searchSelected}
-                                        onChange={(e) => setSearchSelected(e.target.value)}
+                                        value={searchAssociated}
+                                        onChange={(e) => setSearchAssociated(e.target.value)}
                                     />
                                     <table className="table table-striped">
                                         <thead>
@@ -159,8 +168,8 @@ const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredSelected.length > 0 ? (
-                                                filteredSelected.map((player) => (
+                                            {filteredAssociated.length > 0 ? (
+                                                filteredAssociated.map((player) => (
                                                     <tr key={player.id}>
                                                         <td>
                                                             <button
@@ -179,7 +188,7 @@ const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
                                             ) : (
                                                 <tr>
                                                     <td colSpan="4" className="text-center text-muted">
-                                                        Nenhum jogador selecionado.
+                                                        Nenhum jogador associado.
                                                     </td>
                                                 </tr>
                                             )}
