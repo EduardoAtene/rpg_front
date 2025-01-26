@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
+import api from "../services/api";
 
-const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
+const PlayerSelectionModal = ({ sessionId, onClose, onSave, fetchPlayers }) => {
     const [availablePlayers, setAvailablePlayers] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [searchAvailable, setSearchAvailable] = useState("");
     const [searchSelected, setSearchSelected] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [isFetchingPlayers, setIsFetchingPlayers] = useState(true); // Estado para controle de carregamento inicial
-    const [fetchError, setFetchError] = useState(null); // Controle de erros na API
+    const [isFetchingPlayers, setIsFetchingPlayers] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         setIsFetchingPlayers(true);
@@ -42,13 +43,19 @@ const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
         setAvailablePlayers([...availablePlayers, player]);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsLoading(true);
-        setTimeout(() => {
+        try {
+            await api.associatePlayersToSession(sessionId, selectedPlayers.map((p) => p.id));
+            alert("Jogadores adicionados à sessão com sucesso!");
             onSave(selectedPlayers);
-            setIsLoading(false);
             onClose();
-        }, 1500);
+        } catch (error) {
+            console.error("Erro ao salvar jogadores na sessão:", error);
+            alert("Erro ao adicionar jogadores à sessão. Tente novamente.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const filteredAvailable = availablePlayers.filter((player) =>
@@ -118,7 +125,7 @@ const PlayerSelectionModal = ({ onClose, onSave, fetchPlayers }) => {
                                                                 onClick={() => handleAddPlayer(player.id)}
                                                                 disabled={isLoading}
                                                             >
-                                                               ►
+                                                                ►
                                                             </button>
                                                         </td>
                                                     </tr>

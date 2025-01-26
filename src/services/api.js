@@ -26,6 +26,9 @@ const associatePlayersToSession = (sessionId, playerIds) =>
 const unassociatePlayersFromSession = (sessionId, playerIds) =>
     axiosInstance.delete(`/sessions/${sessionId}/players`, { data: { player_ids: playerIds } });
 
+// Função para simular guildas e confirmaaar
+const simulateGuilds = (payload) => axiosInstance.post('/simulate-guilds', payload);
+const confirmGuilds = (payload) => axiosInstance.post('/simulate-guilds/confirm', payload);
 
 
 
@@ -44,7 +47,8 @@ const api = {
     deleteSession,
     associatePlayersToSession,
     unassociatePlayersFromSession,
+    simulateGuilds,
+    confirmGuilds,
 };
 
-// Exporta o objeto `api` como padrão
 export default api;

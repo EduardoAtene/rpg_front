@@ -1,24 +1,25 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PlayerSelectionModal from "../components/PlayerSelectionModal";
 import NumberStepper from "../components/NumberStepper";
 import api from "../services/api";
+import GuildComponents from "../components/GuildComponents";
 
 const StartSession = () => {
+    const { id } = useParams();
     const [showModal, setShowModal] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [guildCount, setGuildCount] = useState(0);
     const [guilds, setGuilds] = useState([]);
-    const [alertMessage, setAlertMessage] = useState(null); // Mensagem de alerta
+    const [simulationResult, setSimulationResult] = useState(null); // Resultado da simulação
+    const [alertMessage, setAlertMessage] = useState(null);
+    const [validationErrors, setValidationErrors] = useState([]); // Lista de erros de validação
+    const [isSimulating, setIsSimulating] = useState(false); // Estado de carregamento
     const navigate = useNavigate();
 
-    const handleOpenModal = () => {
-        setShowModal(true);
-    };
+    const handleOpenModal = () => setShowModal(true);
 
-    const handleCloseModal = () => {
-        setShowModal(false);
-    };
+    const handleCloseModal = () => setShowModal(false);
 
     const handleSavePlayers = (players) => {
         setSelectedPlayers(players);
@@ -53,10 +54,9 @@ const StartSession = () => {
         );
         const playersRemaining = totalPlayersSelected - playersAllocated;
 
-        // Garante que o novo valor não ultrapasse o limite
         if (newCount > playersRemaining + guilds.find((g) => g.id === id).playersCount) {
             setAlertMessage("Número total de jogadores excedido!");
-            setTimeout(() => setAlertMessage(null), 3000); // Remove o alerta após 3 segundos
+            setTimeout(() => setAlertMessage(null), 3000);
             return;
         }
 
@@ -67,27 +67,63 @@ const StartSession = () => {
         );
     };
 
+    const handleSimulate = async () => {
+        const payload = {
+            session_id: parseInt(id, 10),
+            qnt_guilds: guilds.length,
+            guilds: guilds.map((guild) => ({
+                name: guild.name,
+                player_count: guild.playersCount,
+            })),
+        };
+
+        setIsSimulating(true);
+        setValidationErrors([]); // Limpa os erros anteriores
+
+        try {
+            const response = await api.simulateGuilds(payload);
+            setSimulationResult(response.data); // Salva o resultado da simulação
+            alert(response.data.message); // Exibe a mensagem de sucesso
+        } catch (error) {
+            console.error("Erro ao realizar a simulação:", error);
+            if (error.response?.data) {
+                const { message, errors } = error.response.data;
+
+                // Processa os erros de validação
+                if (errors) {
+                    const validationErrorMessages = [];
+                    for (const [field, messages] of Object.entries(errors)) {
+                        validationErrorMessages.push(...messages);
+                    }
+                    setValidationErrors(validationErrorMessages);
+                } else {
+                    // Caso seja um erro geral
+                    setValidationErrors([message]);
+                }
+            } else {
+                setValidationErrors(["Erro desconhecido. Tente novamente."]);
+            }
+        } finally {
+            setIsSimulating(false);
+        }
+    };
+
     const handleSubmit = () => {
-        console.log("Sessão iniciada com os jogadores:", selectedPlayers);
-        console.log("Configuração das guildas:", guilds);
-        alert("Sessão iniciada com sucesso!");
+        handleOpenModal("start");
     };
 
     return (
         <div className="container mt-5">
-            {/* Botões organizados */}
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <button
-                    className="btn btn-secondary"
-                    onClick={() => navigate("/sessions")}
-                >
+                <button className="btn btn-secondary" onClick={() => navigate("/sessions")}>
                     Voltar
                 </button>
                 <button
                     className="btn btn-success"
-                    onClick={() => console.log("Simulação criada")}
+                    onClick={handleSimulate}
+                    disabled={isSimulating || guilds.length === 0}
                 >
-                    Criar Simulação
+                    {isSimulating ? "Simulando..." : "Fazer Simulação"}
                 </button>
                 <button
                     className="btn btn-primary"
@@ -98,23 +134,29 @@ const StartSession = () => {
                 </button>
             </div>
 
-            {/* Alerta de erro */}
             {alertMessage && (
                 <div className="alert alert-danger" role="alert">
                     {alertMessage}
                 </div>
             )}
 
+            {/* Exibe erros de validação */}
+            {validationErrors.length > 0 && (
+                <div className="alert alert-danger" role="alert">
+                    <ul>
+                        {validationErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <h1 className="mb-4 text-center">Iniciar Sessão</h1>
             <div className="row">
-                {/* Jogadores Selecionados */}
                 <div className="col-md-6">
                     <h6 className="text-center">Jogadores Selecionados</h6>
                     <div className="text-center mb-3">
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleOpenModal}
-                        >
+                        <button className="btn btn-primary" onClick={handleOpenModal}>
                             Selecionar Jogadores
                         </button>
                     </div>
@@ -137,14 +179,10 @@ const StartSession = () => {
                         </tbody>
                     </table>
                 </div>
-                {/* Configurar Guildas */}
                 <div className="col-md-6">
                     <h6 className="text-center">Configurar Guildas</h6>
                     <div className="d-flex justify-content-center mb-3">
-                        <NumberStepper
-                            value={guildCount}
-                            onChange={handleGuildCountChange}
-                        />
+                        <NumberStepper value={guildCount} onChange={handleGuildCountChange} />
                     </div>
                     <table className="table table-striped text-center">
                         <thead>
@@ -162,10 +200,7 @@ const StartSession = () => {
                                             className="form-control"
                                             value={guild.name}
                                             onChange={(e) =>
-                                                handleGuildNameChange(
-                                                    guild.id,
-                                                    e.target.value
-                                                )
+                                                handleGuildNameChange(guild.id, e.target.value)
                                             }
                                         />
                                     </td>
@@ -173,10 +208,7 @@ const StartSession = () => {
                                         <NumberStepper
                                             value={guild.playersCount}
                                             onChange={(newCount) =>
-                                                handlePlayersCountChange(
-                                                    guild.id,
-                                                    newCount
-                                                )
+                                                handlePlayersCountChange(guild.id, newCount)
                                             }
                                         />
                                     </td>
@@ -186,6 +218,7 @@ const StartSession = () => {
                     </table>
                 </div>
             </div>
+
             {showModal && (
                 <PlayerSelectionModal
                     fetchPlayers={async () => {
@@ -194,7 +227,12 @@ const StartSession = () => {
                     }}
                     onClose={handleCloseModal}
                     onSave={handleSavePlayers}
+                    sessionId={id}
                 />
+            )}
+
+            {simulationResult && (
+                <GuildComponents guilds={simulationResult.data} />
             )}
         </div>
     );
