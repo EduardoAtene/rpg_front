@@ -85,7 +85,7 @@ const StartSession = () => {
             const response = await api.simulateGuilds(payload);
             setSimulationResult(response.data);
             setAlertMessageSuccess("Simulação realizada com sucesso!");
-            setTimeout(() => setAlertMessageSuccess(null), 3000);
+            setTimeout(() => setAlertMessageSuccess(null), 1000);
         } catch (error) {
             console.error("Erro ao realizar a simulação:", error);
             if (error.response?.data) {

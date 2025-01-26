@@ -8,6 +8,7 @@ const CreatePlayer = () => {
     const [playerClassId, setPlayerClassId] = useState("");
     const [classes, setClasses] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [xpError, setXpError] = useState(""); // Armazena o erro de validação do XP
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -40,6 +41,13 @@ const CreatePlayer = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (xp < 1 || xp > 100 || !Number.isInteger(xp)) {
+            setXpError("O XP deve ser um número inteiro entre 1 e 100.");
+            return;
+        }
+
+        setXpError("");
         setIsLoading(true);
 
         const playerData = { name, xp, player_class_id: playerClassId };
@@ -73,8 +81,18 @@ const CreatePlayer = () => {
     };
 
     const handleXpChange = (e) => {
-        const value = Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1));
+        const value = e.target.value;
         setXp(value);
+
+        if (!Number.isInteger(Number(value))) {
+            setXpError("O XP deve ser um número inteiro.");
+        } else if (value < 1) {
+            setXpError("O XP não pode ser menor que 1.");
+        } else if (value > 100) {
+            setXpError("O XP não pode ser maior que 100.");
+        } else {
+            setXpError("");
+        }
     };
 
     return (
@@ -118,17 +136,16 @@ const CreatePlayer = () => {
                         </select>
                     </div>
                     <div className="mb-3">
-                        <label htmlFor="xp" className="form-label">XP do Jogador (1-100)</label>
+                        <label htmlFor="xp" className="form-label">XP do Jogador</label>
                         <input
                             type="number"
                             id="xp"
                             className="form-control"
                             value={xp}
                             onChange={handleXpChange}
-                            min="1"
-                            max="100"
                             required
                         />
+                        {xpError && <div className="text-danger mt-1">{xpError}</div>}
                     </div>
                     <div className="d-flex justify-content-between">
                         <button
